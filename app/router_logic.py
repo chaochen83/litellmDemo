@@ -35,10 +35,10 @@ def get_models_for_goal(goal: RoutingGoal) -> List[str]:
         RoutingGoal.COST: [
             "dashscope/qwen-turbo",  # 便宜
             "gpt-3.5-turbo",
-            "anthropic/claude-3-5-sonnet-20241022",
+            "claude-sonnet-4-20250514",
         ],
         RoutingGoal.LATENCY: [
-            "anthropic/claude-3-5-haiku-20241022",  # 低延迟
+            "claude-sonnet-4-20250514",  # 低延迟
             "dashscope/qwen-turbo",
             "gpt-3.5-turbo",
         ],
@@ -50,7 +50,7 @@ def get_models_for_goal(goal: RoutingGoal) -> List[str]:
         RoutingGoal.COMPLIANCE: [
             "dashscope/qwen-max",
             "dashscope/qwen-plus",
-            "anthropic/claude-3-5-sonnet-20241022",
+            "claude-sonnet-4-20250514",
         ],
     }
     return strategy_models.get(goal, ["claude-sonnet-4-20250514", "dashscope/qwen-turbo", "gpt-3.5-turbo"])
