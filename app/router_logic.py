@@ -30,38 +30,27 @@ def get_models_for_goal(goal: RoutingGoal) -> List[str]:
     最大精度优先：强模型优先（含 Claude Opus、Qwen-Max、GPT-4o）
     合规隔离优先：境内/合规模型（优先 Qwen，可选 Claude）
     """
+    # 从这里找：https://docs.litellm.ai/docs/providers/anthropic
     strategy_models = {
         RoutingGoal.COST: [
-            "anthropic/claude-3-5-haiku-20241022",  # 便宜
-            "dashscope/qwen-turbo",
+            "dashscope/qwen-turbo",  # 便宜
             "gpt-3.5-turbo",
             "anthropic/claude-3-5-sonnet-20241022",
-            "dashscope/qwen-plus",
-            "gpt-4o-mini",
-            "gpt-4o",
         ],
         RoutingGoal.LATENCY: [
             "anthropic/claude-3-5-haiku-20241022",  # 低延迟
             "dashscope/qwen-turbo",
             "gpt-3.5-turbo",
-            "dashscope/qwen-plus",
-            "gpt-4o-mini",
         ],
         RoutingGoal.ACCURACY: [
-            "anthropic/claude-3-5-sonnet-20241022",
-            "gpt-4o",
-            "dashscope/qwen-max",
-            "anthropic/claude-3-opus-20240229",
-            "gpt-4-turbo",
-            "dashscope/qwen-plus",
             "gpt-3.5-turbo",
+            "claude-sonnet-4-20250514",
+            "dashscope/qwen-plus",
         ],
         RoutingGoal.COMPLIANCE: [
             "dashscope/qwen-max",
             "dashscope/qwen-plus",
             "anthropic/claude-3-5-sonnet-20241022",
-            "gpt-4o",
-            "gpt-3.5-turbo",
         ],
     }
     return strategy_models.get(goal, ["claude-sonnet-4-20250514", "dashscope/qwen-turbo", "gpt-3.5-turbo"])
