@@ -15,12 +15,20 @@
 
 ## 本地安装（不用 Docker）
 
-### 1. Python 依赖
+### 1. 准备 Python 环境（3.10+）
 
 ```bash
-cd /Users/chao/Coding/litellmDemo
+# 进入项目目录
+cd /path/to/litellmDemo
+
+# 可选：升级 pip（推荐）
+python3 -m pip install --upgrade pip
+
+# 创建并激活虚拟环境
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
+
+# 安装依赖
 pip install -r requirements.txt
 ```
 

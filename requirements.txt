@@ -1,22 +1,21 @@
-# API & LLM
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-litellm[proxy]>=1.30.0
-openai>=1.12.0
+# API & LLM (OpenAI / Anthropic / Qwen via LiteLLM)
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+litellm[proxy]>=1.82.0
+openai>=2.0.0
 
 # Database: MySQL (local, no Docker) + Redis
-sqlalchemy[asyncio]>=2.0.25
+sqlalchemy[asyncio]>=2.0.30
 asyncmy>=0.2.9
-pymysql>=1.1.0
 redis>=5.0.0
 
 # Metrics
 prometheus-client>=0.19.0
 
-# Config
+# Config / settings
 python-dotenv>=1.0.0
 pydantic-settings>=2.1.0
 
-# Frontend
+# Frontend / static files
 aiofiles>=23.2.1
 jinja2>=3.1.3
