@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>数据看板 - LiteLLM Router</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 24px; background: #0f0f12; color: #e4e4e7; }
+    a { color: #7c9eff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    nav { margin-bottom: 24px; }
+    nav a { margin-right: 16px; }
+    .row { display: flex; gap: 16px; margin-bottom: 16px; }
+    .box { background: #18181c; border: 1px solid #2a2a2e; border-radius: 12px; padding: 20px; flex: 1; }
+    .box h3 { margin: 0 0 8px; font-size: 13px; color: #71717a; font-weight: 600; }
+    .box .value { font-size: 24px; font-weight: 700; color: #fff; }
+    .bottom { display: flex; gap: 16px; align-items: stretch; }
+    .wide { flex: 1; min-width: 0; background: #18181c; border: 1px solid #2a2a2e; border-radius: 12px; padding: 20px; }
+    .narrow { width: 320px; flex-shrink: 0; background: #18181c; border: 1px solid #2a2a2e; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+    .wide h3 { margin: 0 0 16px; font-size: 14px; color: #a1a1aa; display: flex; align-items: center; justify-content: space-between; }
+    .narrow h3 { margin: 0 0 12px; font-size: 14px; color: #a1a1aa; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    select { background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+    .security-list { list-style: none; padding: 0; margin: 0; overflow: auto; flex: 1; }
+    .security-list li { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid; position: relative; }
+    .security-list li.risk { background: rgba(239,68,68,0.15); border-color: #ef4444; }
+    .security-list li.desensitize { background: rgba(234,179,8,0.15); border-color: #eab308; }
+    .security-list li .title { font-weight: 600; margin-bottom: 4px; }
+    .security-list li .time { position: absolute; top: 12px; right: 12px; font-size: 12px; color: #71717a; }
+    #qpsChart { max-height: 280px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">数据看板</a>
+    <a href="/routing">智能选路与安全配置</a>
+  </nav>
+
+  <div class="row">
+    <div class="box">
+      <h3>实时请求峰值</h3>
+      <div class="value" id="peakQps">-- QPS</div>
+    </div>
+    <div class="box">
+      <h3>今日消耗 token</h3>
+      <div class="value" id="todayTokens">--</div>
+    </div>
+    <div class="box">
+      <h3>平均响应延迟</h3>
+      <div class="value" id="avgLatency">--</div>
+    </div>
+    <div class="box">
+      <h3>本月估算支出</h3>
+      <div class="value" id="monthSpend">--</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="wide">
+      <div class="chart-header">
+        <h3>各模型实时流量热力分布（QPS）</h3>
+        <select id="rangeSelect">
+          <option value="1">过去1小时</option>
+          <option value="24" selected>过去24小时</option>
+        </select>
+      </div>
+      <canvas id="qpsChart"></canvas>
+    </div>
+    <div class="narrow">
+      <h3>安全围栏实时记录</h3>
+      <ul class="security-list" id="securityList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = ['#7c9eff', '#34d399', '#f472b6', '#fbbf24', '#a78bfa', '#22d3ee'];
+    let qpsChart = null;
+
+    async function loadSummary() {
+      try {
+        const r = await fetch('/api/dashboard/summary');
+        const d = await r.json();
+        document.getElementById('peakQps').textContent = d.peak_qps_display ?? (d.peak_qps + ' QPS');
+        document.getElementById('todayTokens').textContent = d.today_tokens_display ?? '--';
+        document.getElementById('avgLatency').textContent = d.avg_latency_display ?? '--';
+        document.getElementById('monthSpend').textContent = d.month_spend_display ?? '--';
+      } catch (e) {
+        console.warn('summary', e);
+      }
+    }
+
+    function fixQpsData(data, labelsSorted) {
+      const out = [];
+      for (let i = 0; i < labelsSorted.length; i++) {
+        const ts = labelsSorted[i];
+        const point = (data || []).find(p => p.time === ts);
+        out.push(point ? point.qps : 0);
+      }
+      return out;
+    }
+
+    async function loadQpsAgain() {
+      const rangeHours = parseInt(document.getElementById('rangeSelect').value) || 24;
+      const r = await fetch('/api/dashboard/qps_by_model?range_hours=' + rangeHours);
+      const data = await r.json();
+      const series = data.series || {};
+      const labelsSet = new Set();
+      Object.values(series).forEach(arr => arr.forEach(p => labelsSet.add(p.time)));
+      const labelsSorted = Array.from(labelsSet).sort((a,b)=>a-b);
+      const labels = labelsSorted.map(ts => new Date(ts*1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+      const datasets = Object.entries(series).map(([model], i) => ({
+        label: model,
+        data: fixQpsData(series[model], labelsSorted),
+        borderColor: COLORS[i % COLORS.length],
+        backgroundColor: COLORS[i % COLORS.length] + '20',
+        fill: true,
+        tension: 0.3,
+      }));
+      if (!qpsChart) {
+        qpsChart = new Chart(document.getElementById('qpsChart'), {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { grid: { color: '#2a2a2e' }, ticks: { color: '#71717a', maxTicksLimit: 12 } },
+              y: { grid: { color: '#2a2a2e' }, ticks: { color: '#71717a' }, beginAtZero: true },
+            },
+            plugins: { legend: { labels: { color: '#a1a1aa' } } },
+          },
+        });
+      } else {
+        qpsChart.data.labels = labels;
+        qpsChart.data.datasets = Object.entries(series).map(([model], i) => ({
+          label: model,
+          data: fixQpsData(series[model], labelsSorted),
+          borderColor: COLORS[i % COLORS.length],
+          backgroundColor: COLORS[i % COLORS.length] + '20',
+          fill: true,
+          tension: 0.3,
+        }));
+        qpsChart.update();
+      }
+    }
+
+    document.getElementById('rangeSelect').addEventListener('change', loadQpsAgain);
+
+    async function loadSecurity() {
+      try {
+        const r = await fetch('/api/dashboard/security_logs');
+        const list = await r.json();
+        const ul = document.getElementById('securityList');
+        ul.innerHTML = list.map(item => `
+          <li class="${item.level}">
+            <span class="time">${item.time || ''}</span>
+            <div class="title">${item.title}</div>
+            <div class="content">${item.content}</div>
+          </li>
+        `).join('');
+      } catch (e) {
+        console.warn('security', e);
+      }
+    }
+
+    loadSummary();
+    loadQpsAgain();
+    loadSecurity();
+    setInterval(loadSummary, 10000);
+    setInterval(() => loadQpsAgain(), 60000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>智能选路与安全配置 - LiteLLM Router</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 24px; background: #0f0f12; color: #e4e4e7; }
+    a { color: #7c9eff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    nav { margin-bottom: 24px; }
+    nav a { margin-right: 16px; }
+    .layout { display: flex; gap: 24px; align-items: stretch; min-height: 60vh; }
+    .left { width: 30%; flex-shrink: 0; background: #18181c; border: 1px solid #2a2a2e; border-radius: 12px; padding: 24px; }
+    .right { flex: 1; min-width: 0; background: #18181c; border: 1px solid #2a2a2e; border-radius: 12px; padding: 24px; }
+    .left h2 { margin: 0 0 20px; font-size: 16px; color: #a1a1aa; font-weight: 600; }
+    .left label { display: block; font-size: 13px; color: #71717a; margin-bottom: 8px; }
+    .left select { width: 100%; background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; }
+    .right p { color: #71717a; font-size: 14px; margin: 0; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">数据看板</a>
+    <a href="/routing">智能选路与安全配置</a>
+  </nav>
+
+  <div class="layout">
+    <div class="left">
+      <h2>选路策略规则</h2>
+      <label for="goal">路由优化目标</label>
+      <select id="goal">
+        <option value="成本优先">成本优先</option>
+        <option value="响应延迟优先">响应延迟优先</option>
+        <option value="最大精度优先">最大精度优先</option>
+        <option value="合规隔离优先">合规隔离优先</option>
+      </select>
+    </div>
+    <div class="right">
+      <p>（右侧暂空，后续可扩展策略详情、模型权重等）</p>
+    </div>
+  </div>
+
+  <script>
+    async function loadGoal() {
+      try {
+        const r = await fetch('/api/routing/goal');
+        const d = await r.json();
+        const sel = document.getElementById('goal');
+        if (d.goal && sel) sel.value = d.goal;
+      } catch (e) {
+        console.warn('load goal', e);
+      }
+    }
+    document.getElementById('goal').addEventListener('change', async function() {
+      try {
+        await fetch('/api/routing/goal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: this.value }),
+        });
+      } catch (e) {
+        console.warn('set goal', e);
+      }
+    });
+    loadGoal();
+  </script>
+</body>
+</html>
