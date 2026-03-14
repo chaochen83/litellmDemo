@@ -32,6 +32,14 @@ source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
+**注意（Prometheus multiprocess）**：安装依赖后请先创建 `./data/prometheus_multiproc/` 目录，否则访问 `/metrics` 时 Prometheus 的 multiprocess 模式可能报错。
+
+```bash
+mkdir -p ./data/prometheus_multiproc
+```
+
+（后续如果不需要 Prometheus，可以把 Prometheus 相关内容整体移除。）
+
 ### 2. MySQL 本地安装与建库
 
 - **macOS**: `brew install mysql`，启动：`brew services start mysql`
