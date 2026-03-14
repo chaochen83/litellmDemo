@@ -30,39 +30,38 @@ def get_models_for_goal(goal: RoutingGoal) -> List[str]:
     最大精度优先：强模型优先（含 Claude Opus、Qwen-Max、GPT-4o）
     合规隔离优先：境内/合规模型（优先 Qwen，可选 Claude）
     """
-    # model name要从这里面找：https://docs.litellm.ai/docs/providers/dashscope
     strategy_models = {
-        # 目标：最低成本
-        # 策略：选择各家中最便宜的轻量模型
         RoutingGoal.COST: [
-            "claude-sonnet-4-20250514",           # Anthropic 最快、最便宜的模型
-            "dashscope/qwen-turbo",                  # Qwen 的延迟优化/成本优化模型，正取代turbo
-            "gpt-5-nano-2025-08-07",               # GPT 的轻量快速版本（假设名称，需确认）
+            "anthropic/claude-3-5-haiku-20241022",  # 便宜
+            "dashscope/qwen-turbo",
+            "gpt-3.5-turbo",
+            "anthropic/claude-3-5-sonnet-20241022",
+            "dashscope/qwen-plus",
+            "gpt-4o-mini",
+            "gpt-4o",
         ],
-        
-        # 目标：最低延迟
-        # 策略：选择各家中速度最快的模型，通常也是轻量模型
         RoutingGoal.LATENCY: [
-            "claude-sonnet-4-20250514",           # Anthropic 速度最快的模型
-            "dashscope/qwen-turbo",                  # Qwen 的延迟优化模型
-            "gpt-5-nano-2025-08-07",               # GPT 的快速版本（假设名称，需确认）
+            "anthropic/claude-3-5-haiku-20241022",  # 低延迟
+            "dashscope/qwen-turbo",
+            "gpt-3.5-turbo",
+            "dashscope/qwen-plus",
+            "gpt-4o-mini",
         ],
-        
-        # 目标：最高准确度
-        # 策略：选择各家的旗舰/最强模型
         RoutingGoal.ACCURACY: [
-            "claude-opus-4.6",             # Anthropic 最智能、最强大的模型
-            "gpt-5.4",                 # GPT 的旗舰版本（假设名称，需确认）
-            "dashscope/qwen-max",                    # Qwen 的下一代旗舰模型
+            "anthropic/claude-3-5-sonnet-20241022",
+            "gpt-4o",
+            "dashscope/qwen-max",
+            "anthropic/claude-3-opus-20240229",
+            "gpt-4-turbo",
+            "dashscope/qwen-plus",
+            "gpt-3.5-turbo",
         ],
-        
-        # 目标：合规/安全
-        # 策略：选择各家中合规性好、风格偏保守的模型。Qwen 在国内市场对合规有深度优化。
-        #       根据一些报道，GPT-5.2 风格偏"冷"和安全 [citation:5]。
         RoutingGoal.COMPLIANCE: [
-            "dashscope/qwen-max",                    # Qwen 旗舰，国内合规优化好
-            "gpt-5.2",                      # GPT-5.2 本身已更注重安全 [citation:5]
-            "claude-sonnet-4.6",            # Sonnet 作为主力，平衡性佳
+            "dashscope/qwen-max",
+            "dashscope/qwen-plus",
+            "anthropic/claude-3-5-sonnet-20241022",
+            "gpt-4o",
+            "gpt-3.5-turbo",
         ],
     }
-    return strategy_models.get(goal, ["claude-sonnet-4-20250514", "dashscope/qwen-turbo", "gpt-5.2-flash"])
+    return strategy_models.get(goal, ["claude-sonnet-4-20250514", "dashscope/qwen-turbo", "gpt-3.5-turbo"])

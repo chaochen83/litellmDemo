@@ -171,14 +171,18 @@ async def dashboard_summary(db: AsyncSession = Depends(get_db)):
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     month_start = (today_start.replace(day=1))
 
-    # 实时请求峰值 QPS：用最近 1 分钟请求数 / 60 近似
+    # 实时请求峰值 QPS：最近 1 分钟请求数 / 60，向上取整为整数 QPS，便于阅读
     r = await db.execute(
         select(func.count(RequestLog.id)).where(
             RequestLog.created_at >= now - timedelta(minutes=1)
         )
     )
     count_1m = r.scalar() or 0
-    peak_qps = round(count_1m / 60.0, 1) if count_1m else 0
+    if count_1m == 0:
+        peak_qps = 0
+    else:
+        window = 60
+        peak_qps = int((count_1m + window - 1) / window)
 
     # 今日消耗 token
     r = await db.execute(
